@@ -153,7 +153,8 @@ func (a *Auth) IsAdmin(ctx context.Context, userID int64) (bool, error) {
 
 			return false, fmt.Errorf("%s: %w", op, ErrInvalidAppId)
 		}
-		log.Error("failed to check if user is admin", slog.Bool("is_admin", isAdmin))
+
+		log.Error("failed to check if user is admin", sl.Err(err))
 	}
 
 	log.Info("checking if user is admin", slog.Bool("is_admin", isAdmin))

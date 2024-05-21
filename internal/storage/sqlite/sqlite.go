@@ -80,12 +80,11 @@ func (s *Storage) IsAdmin(ctx context.Context, userID int64) (bool, error) {
 	const op = "storage.sqlite.IsAdmin"
 	var isAdmin bool
 
-	stmt, err := s.db.Prepare("SELECT * FROM users WHERE id == ? AND is_admin = ?")
+	stmt, err := s.db.Prepare("SELECT is_admin FROM users WHERE id == ?")
 	if err != nil {
 		return false, fmt.Errorf("%s: %w", op, err)
 	}
-
-	row := stmt.QueryRowContext(ctx, userID, is_admin)
+	row := stmt.QueryRowContext(ctx, userID)
 
 	err = row.Scan(&isAdmin)
 	if err != nil {
