@@ -131,7 +131,7 @@ func (a *Auth) RegisterNewUser(ctx context.Context, email, pass string) (int64, 
 		return 0, fmt.Errorf("%s: %w", op, err)
 	}
 
-	log.Info("user created", sl.Err(nil))
+	log.Info("user created")
 
 	return id, nil
 }
