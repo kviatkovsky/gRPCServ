@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/kviatkovsky/gRPCServ_sso/internal/domain/models"
+	"github.com/kviatkovsky/gRPCServ_sso/internal/lib/jwt"
 	"github.com/kviatkovsky/gRPCServ_sso/internal/lib/logger/sl"
 	"github.com/kviatkovsky/gRPCServ_sso/internal/storage"
 	"golang.org/x/crypto/bcrypt"
@@ -40,6 +41,8 @@ type AppProvider interface {
 
 var (
 	ErrInvalidCredentials = errors.New("invalid credentials")
+	ErrInvalidAppId       = errors.New("invalid APP ID")
+	ErrUserExist          = errors.New("user already registered")
 )
 
 func New(
@@ -93,6 +96,10 @@ func (a *Auth) Login(ctx context.Context, email, password string, appID int) (st
 	}
 
 	log.Info("user logged successfully")
+
+	token, err := jwt.NewToken(user, app, a.tokenTTL)
+
+	return token, nil
 }
 
 func (a *Auth) RegisterNewUser(ctx context.Context, email, pass string) (int64, error) {
@@ -114,6 +121,11 @@ func (a *Auth) RegisterNewUser(ctx context.Context, email, pass string) (int64, 
 
 	id, err := a.usrSaver.SaveUser(ctx, email, passHash)
 	if err != nil {
+		if errors.Is(err, storage.ErrUserAlreadyExists) {
+			a.log.Warn("user already exists")
+
+			return 0, fmt.Errorf("%s: %w", op, ErrUserExist)
+		}
 		log.Error("failed to save user", sl.Err(err))
 
 		return 0, fmt.Errorf("%s: %w", op, err)
@@ -125,5 +137,26 @@ func (a *Auth) RegisterNewUser(ctx context.Context, email, pass string) (int64, 
 }
 
 func (a *Auth) IsAdmin(ctx context.Context, userID int64) (bool, error) {
-	panic("not implemented")
+	const op = "auth/auth.IsAdmin"
+
+	log := a.log.With(
+		slog.String("op", op),
+		slog.Int64("user_id", userID),
+	)
+
+	log.Info("checking if user is admin")
+
+	isAdmin, err := a.usrProvider.IsAdmin(ctx, userID)
+	if err != nil {
+		if errors.Is(err, storage.ErrAppNotFound) {
+			a.log.Warn("user not found")
+
+			return false, fmt.Errorf("%s: %w", op, ErrInvalidAppId)
+		}
+		log.Error("failed to check if user is admin", slog.Bool("is_admin", isAdmin))
+	}
+
+	log.Info("checking if user is admin", slog.Bool("is_admin", isAdmin))
+
+	return isAdmin, nil
 }
