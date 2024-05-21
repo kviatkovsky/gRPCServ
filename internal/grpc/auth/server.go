@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 
+	"github.com/kviatkovsky/gRPCServ_sso/internal/services/auth"
 	ssov1 "github.com/kviatkovsky/gRPCService_protos/gen/go/sso"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -33,8 +34,8 @@ type ServerAPI struct {
 	auth Auth
 }
 
-func Register(gRPC *grpc.Server) {
-	ssov1.RegisterAuthServer(gRPC, &ServerAPI{})
+func Register(gRPC *grpc.Server, auth *auth.Auth) {
+	ssov1.RegisterAuthServer(gRPC, &ServerAPI{auth: auth})
 }
 
 func (s *ServerAPI) Login(ctx context.Context, req *ssov1.LoginRequest) (*ssov1.LoginResponse, error) {
